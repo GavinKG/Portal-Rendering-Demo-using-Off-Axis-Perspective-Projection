@@ -5392,6 +5392,10 @@ PrefabInstance:
       value: 
       objectReference: {fileID: 3887353691269359978, guid: 7c781554f1120e247afe22f303c2dc2a, type: 3}
     - target: {fileID: 2804106566559583696, guid: 3ad812db89b0d9a4da0ba9b3db287ad5, type: 3}
+      propertyPath: portalConnections.Array.data[0].oneWayConnection
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2804106566559583696, guid: 3ad812db89b0d9a4da0ba9b3db287ad5, type: 3}
       propertyPath: portalConnections.Array.data[0].sourcePortalObject
       value: 
       objectReference: {fileID: 8887976494341256580, guid: 69a527471f8b0f24b810968babcc125f, type: 3}

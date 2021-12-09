@@ -5,12 +5,13 @@ using UnityEngine;
 using UnityEngine.Events;
 
 [System.Serializable]
-public class PortalConnection {
+public class PortalConnectionSetup {
 
     public Portal sourcePortal;
     public Portal targetPortal;
     public bool oneWayConnection = false;
 }
+
 
 /// <summary>
 /// The singleton manager for managing portal, connection info, cameras, and directly talks to the renderer.
@@ -19,8 +20,34 @@ public class PortalConnection {
 /// </summary>
 public class PortalManager : MonoBehaviour {
 
+    // ----------- enums:
+    public enum PortalRenderMethod {
+        RenderTexture,
+        Stencil
+    }
 
-    // ----------- editor:
+    public enum PortalRenderTextureSize {
+        _128 = 128,
+        _256 = 256,
+        _512 = 512,
+        _1024 = 1024,
+        _2048 = 2048,
+        _4096 = 4096
+    }
+
+    // ----------- classes:
+    class PortalConnectionInfo {
+
+        // member's lifecycle should be controlled by outer code.
+
+        public Portal sourcePortal;
+        public Portal targetPortal;
+        public Camera camera;
+        public RenderTexture renderTexture; // will only be used if renderMethod == .RenderTexture
+
+    }
+
+    // ----------- editor, should not change:
 
     [Tooltip("Portal prefab used to preview placement. Cannot be changed during gameplay.")]
     public Portal previewPortalPrefab;
@@ -29,7 +56,13 @@ public class PortalManager : MonoBehaviour {
     public List<Portal> portalPrefabs;
 
     [Tooltip("Defines how portals connect to each other. Should only contains prefabs. Cannot be changed during gameplay.")]
-    public List<PortalConnection> portalConnections;
+    public List<PortalConnectionSetup> portalConnections;
+
+    [Tooltip("Portal render method. Cannot be changed during gameplay.")]
+    public PortalRenderMethod renderMethod = PortalRenderMethod.RenderTexture;
+
+    [Tooltip("Used only when renderMethod == PortalRenderMethod.RenderTexture. Cannot be changed during gameplay.")]
+    public PortalRenderTextureSize renderTextureSize = PortalRenderTextureSize._1024;
 
     // ----------- public singleton:
 
@@ -59,12 +92,6 @@ public class PortalManager : MonoBehaviour {
         }
     }
 
-    public Portal GetTargetPortalObjectFrom(Portal sourcePortal) {
-        if (connectionCacheMap.ContainsKey(sourcePortal)) {
-            return connectionCacheMap[sourcePortal];
-        }
-        return null;
-    }
 
     // ----------- private:
 
@@ -72,32 +99,37 @@ public class PortalManager : MonoBehaviour {
     HashSet<Portal> activePortals = new HashSet<Portal>();
 
     // Hashed version of List<PortalConnection> portalConnections, in two ways.
-    Dictionary<Portal, Portal> connectionCacheMap;
+    Dictionary<Portal, Portal> portalPrefabConnectionCacheMap;
 
     // Active portal gun.
     PortalGun activePortalGun = null;
 
-    // Existing connections.
-    Dictionary<Portal, Portal> existingConnections;
+    // Existing connection info, used at runtime.
+    List<PortalConnectionInfo> connectionInfo;
 
     void InitConnectionCacheMap() {
-        connectionCacheMap = new Dictionary<Portal, Portal>();
-        foreach (PortalConnection connection in portalConnections) {
-            if (connection.sourcePortal == null || connection.targetPortal == null) {
+        portalPrefabConnectionCacheMap = new Dictionary<Portal, Portal>();
+        foreach (PortalConnectionSetup setup in portalConnections) {
+            if (setup.sourcePortal == null || setup.targetPortal == null) {
                 throw new Exception("Invalid portalConnections");
             }
-            connectionCacheMap.Add(connection.sourcePortal, connection.targetPortal);
-            if (!connection.oneWayConnection) {
-                connectionCacheMap.Add(connection.targetPortal, connection.sourcePortal);
+            portalPrefabConnectionCacheMap.Add(setup.sourcePortal, setup.targetPortal);
+            if (!setup.oneWayConnection) {
+                portalPrefabConnectionCacheMap.Add(setup.targetPortal, setup.sourcePortal);
             }
         }
     }
 
     private void Start() {
+
         InitConnectionCacheMap();
+
+        connectionInfo = new List<PortalConnectionInfo>();
     }
 
     private void Awake() {
+
+        // singleton
         if (Instance != null) {
             Destroy(gameObject);
         } else {
@@ -110,16 +142,17 @@ public class PortalManager : MonoBehaviour {
         activePortals.Add(portal);
 
         // Check connections.
-        if (connectionCacheMap.ContainsKey(portal)) {
-            Portal otherPortal = connectionCacheMap[portal];
-            portal.ConnectTo(otherPortal);
-
-            // check if two-way connection
-            if (connectionCacheMap.ContainsKey(otherPortal)) {
-                if (connectionCacheMap[otherPortal] == portal) {
-                    otherPortal.ConnectTo(portal);
-                } else {
-                    throw new Exception("There is something wrong on portal connection field.");
+        Portal portalPrefab = portal.PortalPrefab;
+        if (portalPrefabConnectionCacheMap.ContainsKey(portalPrefab)) {
+            Portal otherPortalPrefab = portalPrefabConnectionCacheMap[portalPrefab];
+            foreach (Portal otherPortal in activePortals) {
+                if (otherPortal.PortalPrefab == otherPortalPrefab) {
+                    // find an available portal
+                    InitPortalConnection(portal, otherPortal);
+                    // if two-way connection?
+                    if (portalPrefabConnectionCacheMap.ContainsKey(otherPortalPrefab) && portalPrefabConnectionCacheMap[otherPortalPrefab] == portalPrefab) {
+                        InitPortalConnection(otherPortal, portal);
+                    }
                 }
             }
         }
@@ -131,6 +164,34 @@ public class PortalManager : MonoBehaviour {
 
     void PortalBeforeRemoval(Portal portal) {
         activePortals.Remove(portal);
+    }
+
+    PortalConnectionInfo InitPortalConnection(Portal sourcePortal, Portal targetPortal) {
+
+        PortalConnectionInfo info = new PortalConnectionInfo {
+            sourcePortal = sourcePortal,
+            targetPortal = targetPortal
+        };
+
+        GameObject cameraObject = new GameObject("Camera: " + sourcePortal.name + "->" + targetPortal.name);
+        Camera camera = cameraObject.AddComponent<Camera>();
+
+        if (renderMethod == PortalRenderMethod.RenderTexture) {
+            info.renderTexture = new RenderTexture((int)renderTextureSize, (int)renderTextureSize, 0);
+            camera.targetTexture = info.renderTexture;
+        } else if (renderMethod == PortalRenderMethod.Stencil) {
+            throw new NotImplementedException();
+        }
+
+        sourcePortal.ConnectTo(targetPortal);
+
+        if (renderMethod == PortalRenderMethod.RenderTexture) {
+            sourcePortal.SetPortalTexture(info.renderTexture);
+        }
+
+        print("Connection created: " + sourcePortal.name + " -> " + targetPortal.name);
+
+        return info;
     }
 }
 
