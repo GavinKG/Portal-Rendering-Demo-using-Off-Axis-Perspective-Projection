@@ -146,12 +146,14 @@ public class PortalGun : MonoBehaviour {
             previewPortal.gameObject.SetActive(false);
         }
 
+        // Init portals to the gun.
         portalClip = new List<Portal>(PortalManager.Instance.portalPrefabs.Count); // list of null
         for (int i = 0; i < PortalManager.Instance.portalPrefabs.Count; ++i) {
             portalClip.Add(null);
         }
 
         FillActionBindingList();
+
     }
 
     void Update() {

@@ -61,7 +61,7 @@ public class PortalManager : MonoBehaviour {
     [Tooltip("Portal render method. Should not be changed during gameplay.")]
     public PortalRenderMethod renderMethod = PortalRenderMethod.RenderTexture;
 
-    [Tooltip("Used only when renderMethod == PortalRenderMethod.RenderTexture. Should not be changed during gameplay.")]
+    [Tooltip("Used only when renderMethod == PortalRenderMethod.RenderTexture. This represents the longer side. Should not be changed during gameplay.")]
     public PortalRenderTextureSize renderTextureSize = PortalRenderTextureSize._1024;
 
     // ----------- public singleton:
@@ -92,6 +92,12 @@ public class PortalManager : MonoBehaviour {
         }
     }
 
+    public Vector2Int RenderTextureSize {
+        get {
+            return rtSize;
+        }
+    }
+
 
     // ----------- private:
 
@@ -106,6 +112,9 @@ public class PortalManager : MonoBehaviour {
 
     // Existing connection info, used at runtime.
     List<PortalConnectionInfo> connectionInfo;
+
+    // Render texture's size. Only useful when renderMethod == PortalRenderMethod.RenderTexture.
+    Vector2Int rtSize;
 
     void InitConnectionCacheMap() {
         portalPrefabConnectionCacheMap = new Dictionary<Portal, Portal>();
@@ -127,6 +136,19 @@ public class PortalManager : MonoBehaviour {
         connectionInfo = new List<PortalConnectionInfo>();
 
         referencePortalPrefab.GetComponent<Portal>().FillDetectionPoints();
+
+        // Calculate render texture's size.
+        rtSize = Vector2Int.zero;
+        Vector2 sizeXY = referencePortalPrefab.sizeXY;
+        if (sizeXY.x >= sizeXY.y) {
+            float ratio = sizeXY.y / sizeXY.x;
+            rtSize.x = (int)renderTextureSize;
+            rtSize.y = (int)(rtSize.x * ratio);
+        } else {
+            float ratio = sizeXY.x / sizeXY.y;
+            rtSize.y = (int)renderTextureSize;
+            rtSize.x = (int)(rtSize.y * ratio);
+        }
     }
 
     private void Awake() {
@@ -151,7 +173,7 @@ public class PortalManager : MonoBehaviour {
                 if (otherPortal.PortalPrefab == otherPortalPrefab) {
                     // find an available portal
                     InitPortalConnection(portal, otherPortal);
-                    // if two-way connection?
+                    // two-way connection?
                     if (portalPrefabConnectionCacheMap.ContainsKey(otherPortalPrefab) && portalPrefabConnectionCacheMap[otherPortalPrefab] == portalPrefab) {
                         InitPortalConnection(otherPortal, portal);
                     }
@@ -179,9 +201,8 @@ public class PortalManager : MonoBehaviour {
         Camera camera = info.cameraObject.AddComponent<Camera>();
 
         if (renderMethod == PortalRenderMethod.RenderTexture) {
-            info.renderTexture = new RenderTexture((int)renderTextureSize, (int)renderTextureSize, 0);
+            info.renderTexture = new RenderTexture(rtSize.x, rtSize.y, 0);
             camera.targetTexture = info.renderTexture;
-            camera.rect = new Rect(sourcePortal.sizeXY.x, sourcePortal.sizeXY.y, 1, 1);
         } else if (renderMethod == PortalRenderMethod.Stencil) {
             throw new NotImplementedException();
         }
@@ -191,6 +212,8 @@ public class PortalManager : MonoBehaviour {
         if (renderMethod == PortalRenderMethod.RenderTexture) {
             sourcePortal.SetPortalTexture(info.renderTexture);
         }
+
+        connectionInfo.Add(info);
 
         print("Connection created: " + sourcePortal.name + " -> " + targetPortal.name);
 
