@@ -33,6 +33,8 @@ public class PortalGun : MonoBehaviour {
     [Tooltip("Should we show the placement preview portal?")]
     public bool showPlacementPreview = true;
 
+    public GameObject previewPortalPrefabObject;
+
     [Tooltip("If true, portal will not be placed across multiple gameobjects, even if they form a perfect wall.")]
     public bool shouldPlacedOnSingleObject = false;
 
@@ -48,7 +50,7 @@ public class PortalGun : MonoBehaviour {
 
     Camera camera;
 
-    GameObject previewPortalObject;
+    Portal previewPortal;
 
     List<Portal> portalClip; // size = PortalManager.Instance.portalPrefabs.Count, like an ammo clip.
 
@@ -92,10 +94,9 @@ public class PortalGun : MonoBehaviour {
             }
 
             // check detection points
-            foreach (GameObject detectionPoint in PortalManager.Instance.previewPortalPrefab.GetComponent<Portal>().DetectionPoints) {
+            foreach (Vector3 detectionPoint in PortalManager.Instance.referencePortalPrefab.DetectionPoints) {
                 // calculate detection point world position
-                Vector3 localOffset = detectionPoint.transform.localPosition;
-                Vector3 worldPosition = right * localOffset.x + up * localOffset.y + forward * localOffset.z + hit.point;
+                Vector3 worldPosition = right * detectionPoint.x + up * detectionPoint.y + forward * detectionPoint.z + hit.point;
 
                 // shoot a camera->point ray
                 Vector3 camToPoint = worldPosition - transform.position;
@@ -141,8 +142,8 @@ public class PortalGun : MonoBehaviour {
         camera = GetComponent<Camera>();
 
         if (showPlacementPreview) {
-            previewPortalObject = InstantiatePortalObject(PortalManager.Instance.previewPortalPrefab);
-            previewPortalObject.SetActive(false);
+            previewPortal = InstantiatePortalObject(previewPortalPrefabObject).GetComponent<Portal>();
+            previewPortal.gameObject.SetActive(false);
         }
 
         portalClip = new List<Portal>(PortalManager.Instance.portalPrefabs.Count); // list of null
@@ -167,11 +168,11 @@ public class PortalGun : MonoBehaviour {
         // preview
         if (showPlacementPreview) {
             if (canPlace) {
-                previewPortalObject.transform.position = portalPositionUnderScreenCenter;
-                previewPortalObject.transform.rotation = portalRotationUnderScreenCenter;
-                previewPortalObject.SetActive(true);
+                previewPortal.transform.position = portalPositionUnderScreenCenter;
+                previewPortal.transform.rotation = portalRotationUnderScreenCenter;
+                previewPortal.gameObject.SetActive(true);
             } else {
-                previewPortalObject.SetActive(false);
+                previewPortal.gameObject.SetActive(false);
             }
         }
 
@@ -252,9 +253,14 @@ public class PortalGun : MonoBehaviour {
         return portalClip[idx] != null && portalClip[idx].gameObject.activeInHierarchy;
     }
 
+    GameObject InstantiatePortalObject(GameObject portalPrefabObject) {
+        return InstantiatePortalObject(portalPrefabObject.GetComponent<Portal>());
+    }
+
     GameObject InstantiatePortalObject(Portal portalPrefab) {
+        // todo: should we use PrefabUtility?
         GameObject ret = Instantiate(portalPrefab.gameObject);
-        ret.GetComponent<Portal>().SetPortalPrefab(portalPrefab);
+        ret.GetComponent<Portal>().SetPrefabPortal(portalPrefab);
         return ret;
     }
 

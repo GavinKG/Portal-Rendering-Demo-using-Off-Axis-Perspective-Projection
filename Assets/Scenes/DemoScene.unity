@@ -1638,6 +1638,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   detectionPointDelta: 0.01
   showPlacementPreview: 1
+  previewPortalPrefabObject: {fileID: 8887976494341256580, guid: 9ed37dc4bb303cc48b70b48c81e13d2e, type: 3}
   shouldPlacedOnSingleObject: 0
   OnPortalCreated:
     m_PersistentCalls:
@@ -5364,7 +5365,15 @@ PrefabInstance:
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 2804106566559583696, guid: 3ad812db89b0d9a4da0ba9b3db287ad5, type: 3}
+      propertyPath: refPortalPrefab
+      value: 
+      objectReference: {fileID: 3887353691269359978, guid: 9ed37dc4bb303cc48b70b48c81e13d2e, type: 3}
+    - target: {fileID: 2804106566559583696, guid: 3ad812db89b0d9a4da0ba9b3db287ad5, type: 3}
       propertyPath: previewPortalPrefab
+      value: 
+      objectReference: {fileID: 3887353691269359978, guid: 9ed37dc4bb303cc48b70b48c81e13d2e, type: 3}
+    - target: {fileID: 2804106566559583696, guid: 3ad812db89b0d9a4da0ba9b3db287ad5, type: 3}
+      propertyPath: referencePortalPrefab
       value: 
       objectReference: {fileID: 3887353691269359978, guid: 9ed37dc4bb303cc48b70b48c81e13d2e, type: 3}
     - target: {fileID: 2804106566559583696, guid: 3ad812db89b0d9a4da0ba9b3db287ad5, type: 3}

@@ -9,8 +9,8 @@ using UnityEngine;
 public class Portal : MonoBehaviour {
     // ----------- editor:
 
-    [Tooltip("Used to place portal onto the wall.")]
-    public List<GameObject> DetectionPoints;
+    [Tooltip("Portal Size in X-Y plane.")]
+    public Vector2 sizeXY = new Vector2(1f, 1f);
 
     [Tooltip("This GameObject is used to present the other side of the portal. Its material will be used when using RenderTexture method to draw portal.")]
     public GameObject portalMeshObject;
@@ -25,25 +25,31 @@ public class Portal : MonoBehaviour {
     // ref to portal prefab object's Portal component.
     public Portal PortalPrefab { get; set; }
 
+    // portal's mounting point to the wall, used for detect if portal is close to the wall.
+    public List<Vector3> DetectionPoints { get; private set; }
+
     // ----------- private:
 
     Portal connectedPortal;
 
     Texture portalMeshObjectOriginalTexture;
 
-    
+
+
+
 
     private void OnDrawGizmos() {
         if (!drawDebugInfo) {
             return;
         }
 
-        Gizmos.color = Color.white;
-        foreach (GameObject point in DetectionPoints) {
-            Gizmos.DrawWireSphere(point.transform.position, 0.1f);
+        FillDetectionPoints();
 
+        Gizmos.color = Color.white;
+        foreach (Vector3 p in DetectionPoints) {
+            Gizmos.DrawSphere(transform.TransformPoint(p), 0.05f);
         }
-        Gizmos.DrawRay(transform.position, transform.TransformDirection(Vector3.forward));
+
         Gizmos.color = Color.blue;
         Gizmos.DrawRay(transform.position, transform.TransformDirection(Vector3.forward));
         Gizmos.color = Color.green;
@@ -53,23 +59,27 @@ public class Portal : MonoBehaviour {
     }
 
     private void Start() {
+
         if (portalMeshObject != null && hidePortalMeshWhenDisconnected && connectedPortal == null) {
             portalMeshObject.SetActive(false);
         }
+
+        // Fill detection points.
+        FillDetectionPoints();
     }
 
     #region Presentation layer (View)
 
     public void DisplayPortalCreated() {
-        
+
     }
 
     public void DisplayPortalBeginRemoval() {
-        
+
     }
 
     public void DisplayPortalRelocated(Vector3 prevPosition, Quaternion prevRotation) {
-        
+
     }
 
     public void DisplayPortalConnected() {
@@ -87,7 +97,7 @@ public class Portal : MonoBehaviour {
     #endregion
 
     // Set the "root" object of this portal instance.
-    public void SetPortalPrefab(Portal portal) {
+    public void SetPrefabPortal(Portal portal) {
         if (PortalUtils.IsPortalPrefabObject(gameObject)) {
             throw new System.Exception("Cannot set portal prefab object on a prefab!");
         }
@@ -159,8 +169,9 @@ public class Portal : MonoBehaviour {
         if (renderer == null) {
             throw new System.Exception("portalMeshObject has no MeshRenderer component.");
         }
-        // this Mesh Renderer should only have one material, with a texture sampler named "Texture".
-        renderer.material.SetTexture(Shader.PropertyToID("Texture"), rt);
+        // this Mesh Renderer should only have one material, with a texture sampler named "_MainTex".
+        // renderer.material.SetTexture(Shader.PropertyToID("Texture"), rt);
+        renderer.material.mainTexture = rt;
     }
 
     public void RestorePortalTexture() {
@@ -173,6 +184,18 @@ public class Portal : MonoBehaviour {
         }
         int textureParamId = Shader.PropertyToID("Texture");
         renderer.material.SetTexture(textureParamId, renderer.sharedMaterial.GetTexture(textureParamId));
+    }
+
+    public void FillDetectionPoints() {
+
+        DetectionPoints = new List<Vector3>();
+
+        // 4 corners of the portal.
+        Vector2 extent = sizeXY / 2;
+        DetectionPoints.Add(new Vector3(extent.x, extent.y, 0));
+        DetectionPoints.Add(new Vector3(extent.x, -extent.y, 0));
+        DetectionPoints.Add(new Vector3(-extent.x, extent.y, 0));
+        DetectionPoints.Add(new Vector3(-extent.x, -extent.y, 0));
     }
 
 

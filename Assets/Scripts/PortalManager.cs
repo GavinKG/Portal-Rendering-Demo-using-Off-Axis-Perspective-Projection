@@ -42,26 +42,26 @@ public class PortalManager : MonoBehaviour {
 
         public Portal sourcePortal;
         public Portal targetPortal;
-        public Camera camera;
+        public GameObject cameraObject;
         public RenderTexture renderTexture; // will only be used if renderMethod == .RenderTexture
 
     }
 
     // ----------- editor, should not change:
 
-    [Tooltip("Portal prefab used to preview placement. Cannot be changed during gameplay.")]
-    public Portal previewPortalPrefab;
+    [Tooltip("Portal prefab used as a reference to do calculations. Will never be instantiated. Should not be changed during gameplay.")]
+    public Portal referencePortalPrefab;
 
-    [Tooltip("Can contain arbitrary amount of portals. Cannot be changed during gameplay.")]
+    [Tooltip("Can contain arbitrary amount of portals. Should not be changed during gameplay.")]
     public List<Portal> portalPrefabs;
 
-    [Tooltip("Defines how portals connect to each other. Should only contains prefabs. Cannot be changed during gameplay.")]
+    [Tooltip("Defines how portals connect to each other. Should only contains prefabs. Should not be changed during gameplay.")]
     public List<PortalConnectionSetup> portalConnections;
 
-    [Tooltip("Portal render method. Cannot be changed during gameplay.")]
+    [Tooltip("Portal render method. Should not be changed during gameplay.")]
     public PortalRenderMethod renderMethod = PortalRenderMethod.RenderTexture;
 
-    [Tooltip("Used only when renderMethod == PortalRenderMethod.RenderTexture. Cannot be changed during gameplay.")]
+    [Tooltip("Used only when renderMethod == PortalRenderMethod.RenderTexture. Should not be changed during gameplay.")]
     public PortalRenderTextureSize renderTextureSize = PortalRenderTextureSize._1024;
 
     // ----------- public singleton:
@@ -125,6 +125,8 @@ public class PortalManager : MonoBehaviour {
         InitConnectionCacheMap();
 
         connectionInfo = new List<PortalConnectionInfo>();
+
+        referencePortalPrefab.GetComponent<Portal>().FillDetectionPoints();
     }
 
     private void Awake() {
@@ -173,12 +175,13 @@ public class PortalManager : MonoBehaviour {
             targetPortal = targetPortal
         };
 
-        GameObject cameraObject = new GameObject("Camera: " + sourcePortal.name + "->" + targetPortal.name);
-        Camera camera = cameraObject.AddComponent<Camera>();
+        info.cameraObject = new GameObject("Camera: " + sourcePortal.name + "->" + targetPortal.name);
+        Camera camera = info.cameraObject.AddComponent<Camera>();
 
         if (renderMethod == PortalRenderMethod.RenderTexture) {
             info.renderTexture = new RenderTexture((int)renderTextureSize, (int)renderTextureSize, 0);
             camera.targetTexture = info.renderTexture;
+            camera.rect = new Rect(sourcePortal.sizeXY.x, sourcePortal.sizeXY.y, 1, 1);
         } else if (renderMethod == PortalRenderMethod.Stencil) {
             throw new NotImplementedException();
         }
