@@ -12,7 +12,8 @@ using UnityEngine.Events;
 /// Similar to UE's Player Controller.
 /// </summary>
 [RequireComponent(typeof(Camera))]
-public class PortalGun : MonoBehaviour {
+public class PortalGun : MonoBehaviour
+{
 
     // ----------- classes:
 
@@ -63,12 +64,14 @@ public class PortalGun : MonoBehaviour {
     Quaternion portalRotationUnderScreenCenter;
 
     // Check portal detection point against scene geometry to find out whether a portal can be created under the mouse
-    bool ShouldPlacePortalUnderScreenCenter() {
+    bool ShouldPlacePortalUnderScreenCenter()
+    {
 
         // shoot a ray from center of the screen
         Ray ray = camera.ViewportPointToRay(new Vector2(0.5f, 0.5f));
         RaycastHit hit;
-        if (Physics.Raycast(ray, out hit)) {
+        if (Physics.Raycast(ray, out hit))
+        {
             GameObject wall = hit.transform.gameObject;
 
             // get portal local coord (world basis)
@@ -76,25 +79,30 @@ public class PortalGun : MonoBehaviour {
             Vector3 up; // y
             Vector3 right; // x
 
-            if (1 - Mathf.Abs(Vector3.Dot(forward, Vector3.up)) <= float.Epsilon) {
+            if (1 - Mathf.Abs(Vector3.Dot(forward, Vector3.up)) <= float.Epsilon)
+            {
                 // normal facing up or down
                 up = camera.transform.forward;
                 up.y = 0;
                 up.Normalize();
 
                 // camera facing up or down
-                if (up.sqrMagnitude == 0.0f) {
+                if (up.sqrMagnitude == 0.0f)
+                {
                     up = camera.transform.up;
                 }
                 right = Vector3.Cross(forward, up);
-            } else {
+            }
+            else
+            {
                 up = Vector3.up;
                 right = Vector3.Cross(forward, up);
                 up = Vector3.Cross(forward, right);
             }
 
             // check detection points
-            foreach (Vector3 detectionPoint in PortalManager.Instance.referencePortalPrefab.DetectionPoints) {
+            foreach (Vector3 detectionPoint in PortalManager.Instance.referencePortalPrefab.DetectionPoints)
+            {
                 // calculate detection point world position
                 Vector3 worldPosition = right * detectionPoint.x + up * detectionPoint.y + forward * detectionPoint.z + hit.point;
 
@@ -103,37 +111,49 @@ public class PortalGun : MonoBehaviour {
                 Ray detectionRay = new Ray(transform.position, camToPoint.normalized);
                 float camToPointLength = camToPoint.magnitude;
                 RaycastHit detectionHit;
-                if (Physics.Raycast(detectionRay, out detectionHit)) {
-                    if (shouldPlacedOnSingleObject) {
-                        if (detectionHit.transform.gameObject != hit.transform.gameObject) {
+                if (Physics.Raycast(detectionRay, out detectionHit))
+                {
+                    if (shouldPlacedOnSingleObject)
+                    {
+                        if (detectionHit.transform.gameObject != hit.transform.gameObject)
+                        {
                             // not sharing same gameobject.
                             return false;
                         }
                     }
 
-                    if (Mathf.Abs(detectionHit.distance - camToPointLength) <= detectionPointDelta) {
+                    if (Mathf.Abs(detectionHit.distance - camToPointLength) <= detectionPointDelta)
+                    {
                         portalPositionUnderScreenCenter = hit.point;
                         portalRotationUnderScreenCenter = Quaternion.LookRotation(forward, up);
-                    } else {
+                    }
+                    else
+                    {
                         // detection point not attached to back wall.
                         return false;
                     }
-                } else {
+                }
+                else
+                {
                     // detection point ray not hit.
                     return false;
                 }
 
             }
-        } else {
+        }
+        else
+        {
             // mouse ray not hit.
             return false;
         }
         return true;
     }
 
-    void Start() {
+    void Start()
+    {
 
-        if (PortalManager.Instance == null) {
+        if (PortalManager.Instance == null)
+        {
             throw new System.Exception("Scene does not contain a Portal Manager.");
         }
 
@@ -141,46 +161,69 @@ public class PortalGun : MonoBehaviour {
 
         camera = GetComponent<Camera>();
 
-        if (showPlacementPreview) {
+        if (showPlacementPreview)
+        {
             previewPortal = InstantiatePortalObject(previewPortalPrefabObject).GetComponent<Portal>();
             previewPortal.gameObject.SetActive(false);
         }
 
         // Init portals to the gun.
         portalClip = new List<Portal>(PortalManager.Instance.portalPrefabs.Count); // list of null
-        for (int i = 0; i < PortalManager.Instance.portalPrefabs.Count; ++i) {
+        for (int i = 0; i < PortalManager.Instance.portalPrefabs.Count; ++i)
+        {
             portalClip.Add(null);
         }
 
         FillActionBindingList();
 
+
+        Cursor.lockState = CursorLockMode.Locked;
+        Cursor.lockState = CursorLockMode.Confined;
+
     }
 
-    void Update() {
+    void Update()
+    {
+
+        // check if should switch showPlacementPreview
+        if (Input.GetKeyDown(KeyCode.H))
+        {
+            showPlacementPreview = !showPlacementPreview;
+        }
 
         // fetch action
         int portalIndex = GetPortalIndexFromAction();
 
         // check portal placement
         bool canPlace = false;
-        if (portalIndex != -1 || showPlacementPreview) {
+        if (portalIndex != -1 || showPlacementPreview)
+        {
             canPlace = ShouldPlacePortalUnderScreenCenter();
         }
 
         // preview
-        if (showPlacementPreview) {
-            if (canPlace) {
+        if (showPlacementPreview)
+        {
+            if (canPlace)
+            {
                 previewPortal.transform.position = portalPositionUnderScreenCenter;
                 previewPortal.transform.rotation = portalRotationUnderScreenCenter;
                 previewPortal.gameObject.SetActive(true);
-            } else {
+            }
+            else
+            {
                 previewPortal.gameObject.SetActive(false);
             }
+        }
+        else
+        {
+            previewPortal.gameObject.SetActive(false);
         }
 
         // placement
         // todo: add logic to close portal...
-        if (portalIndex != -1) {
+        if (portalIndex != -1)
+        {
             OpenPortal(portalIndex, portalPositionUnderScreenCenter, portalRotationUnderScreenCenter);
         }
 
@@ -188,7 +231,8 @@ public class PortalGun : MonoBehaviour {
 
     // hardcoded action binding logic. Will be replaced by config files.
     // portal with lower idx will have priority on higher idx when both actions are detected.
-    void FillActionBindingList() {
+    void FillActionBindingList()
+    {
 
         actionBindingList = new List<ActionBinding> {
 
@@ -200,22 +244,28 @@ public class PortalGun : MonoBehaviour {
         };
     }
 
-    int GetPortalIndexFromAction() {
+    int GetPortalIndexFromAction()
+    {
 
-        if (actionBindingList == null) {
+        if (actionBindingList == null)
+        {
             return -1;
         }
 
-        for (int i = 0; i < actionBindingList.Count; ++i) {
-            if (actionBindingList[i]()) {
+        for (int i = 0; i < actionBindingList.Count; ++i)
+        {
+            if (actionBindingList[i]())
+            {
                 return i;
             }
         }
         return -1;
     }
 
-    void OpenPortal(int idx, Vector3 position, Quaternion rotation) {
-        if (portalClip[idx] == null) {
+    void OpenPortal(int idx, Vector3 position, Quaternion rotation)
+    {
+        if (portalClip[idx] == null)
+        {
             portalClip[idx] = InstantiatePortalObject(PortalManager.Instance.portalPrefabs[idx]).GetComponent<Portal>();
             portalClip[idx].transform.position = position;
             portalClip[idx].transform.rotation = rotation;
@@ -225,18 +275,22 @@ public class PortalGun : MonoBehaviour {
             OnPortalCreated.Invoke(portalClip[idx]);
 
             print("[PortalGun] Portal #" + idx.ToString() + " created.");
-        } else {
+        }
+        else
+        {
             RelocatePortal(idx, position, rotation);
         }
 
 
     }
 
-    void ClosePortal(int idx) {
+    void ClosePortal(int idx)
+    {
         portalClip[idx].gameObject.SetActive(false);
     }
 
-    void RelocatePortal(int idx, Vector3 position, Quaternion rotation) {
+    void RelocatePortal(int idx, Vector3 position, Quaternion rotation)
+    {
 
         Vector3 oldPortalPosition = portalClip[idx].transform.position;
         Quaternion oldPortalRotation = portalClip[idx].transform.rotation;
@@ -251,15 +305,18 @@ public class PortalGun : MonoBehaviour {
     }
 
 
-    bool IsPortalActive(int idx) {
+    bool IsPortalActive(int idx)
+    {
         return portalClip[idx] != null && portalClip[idx].gameObject.activeInHierarchy;
     }
 
-    GameObject InstantiatePortalObject(GameObject portalPrefabObject) {
+    GameObject InstantiatePortalObject(GameObject portalPrefabObject)
+    {
         return InstantiatePortalObject(portalPrefabObject.GetComponent<Portal>());
     }
 
-    GameObject InstantiatePortalObject(Portal portalPrefab) {
+    GameObject InstantiatePortalObject(Portal portalPrefab)
+    {
         // todo: should we use PrefabUtility?
         GameObject ret = Instantiate(portalPrefab.gameObject);
         ret.GetComponent<Portal>().SetPrefabPortal(portalPrefab);

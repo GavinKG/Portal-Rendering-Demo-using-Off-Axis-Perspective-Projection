@@ -22,11 +22,23 @@ public class Portal : MonoBehaviour {
 
     // ----------- public:
 
-    // ref to portal prefab object's Portal component.
+    // ref to portal prefab object's Portal component. Null if already a prefab.
     public Portal PortalPrefab { get; set; }
 
     // portal's mounting point to the wall, used for detect if portal is close to the wall.
     public List<Vector3> DetectionPoints { get; private set; }
+
+    public Vector3 LocalUpperLeftCorner { get { return new Vector3(-sizeXY.x / 2, sizeXY.y / 2); } }
+    public Vector3 LocalUpperRightCorner { get { return new Vector3(sizeXY.x / 2, sizeXY.y / 2); } }
+    public Vector3 LocalLowerLeftCorner { get { return new Vector3(-sizeXY.x / 2, -sizeXY.y / 2); } }
+    public Vector3 LocalLowerRightCorner { get { return new Vector3(sizeXY.x / 2, -sizeXY.y / 2); } }
+
+    public Vector3 WorldUpperLeftCorner { get { return transform.TransformPoint(LocalUpperLeftCorner); } }
+    public Vector3 WorldUpperRightCorner { get { return transform.TransformPoint(LocalUpperRightCorner); } }
+    public Vector3 WorldLowerLeftCorner { get { return transform.TransformPoint(LocalLowerLeftCorner); } }
+    public Vector3 WorldLowerRightCorner { get { return transform.TransformPoint(LocalLowerRightCorner); } }
+
+    public Vector3 FacingDirection { get { return transform.TransformDirection(Vector3.forward); } } // facing +Z
 
     // ----------- private:
 

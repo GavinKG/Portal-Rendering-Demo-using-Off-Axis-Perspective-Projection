@@ -5365,6 +5365,10 @@ PrefabInstance:
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 2804106566559583696, guid: 3ad812db89b0d9a4da0ba9b3db287ad5, type: 3}
+      propertyPath: debug
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 2804106566559583696, guid: 3ad812db89b0d9a4da0ba9b3db287ad5, type: 3}
       propertyPath: refPortalPrefab
       value: 
       objectReference: {fileID: 3887353691269359978, guid: 9ed37dc4bb303cc48b70b48c81e13d2e, type: 3}
@@ -5390,7 +5394,7 @@ PrefabInstance:
       objectReference: {fileID: 3887353691269359978, guid: 7c781554f1120e247afe22f303c2dc2a, type: 3}
     - target: {fileID: 2804106566559583696, guid: 3ad812db89b0d9a4da0ba9b3db287ad5, type: 3}
       propertyPath: portalConnections.Array.size
-      value: 1
+      value: 2
       objectReference: {fileID: 0}
     - target: {fileID: 2804106566559583696, guid: 3ad812db89b0d9a4da0ba9b3db287ad5, type: 3}
       propertyPath: portalConnections.Array.data[0].sourcePortal
@@ -5401,8 +5405,16 @@ PrefabInstance:
       value: 
       objectReference: {fileID: 3887353691269359978, guid: 7c781554f1120e247afe22f303c2dc2a, type: 3}
     - target: {fileID: 2804106566559583696, guid: 3ad812db89b0d9a4da0ba9b3db287ad5, type: 3}
+      propertyPath: portalConnections.Array.data[1].sourcePortal
+      value: 
+      objectReference: {fileID: 3887353691269359978, guid: 7c781554f1120e247afe22f303c2dc2a, type: 3}
+    - target: {fileID: 2804106566559583696, guid: 3ad812db89b0d9a4da0ba9b3db287ad5, type: 3}
+      propertyPath: portalConnections.Array.data[1].targetPortal
+      value: 
+      objectReference: {fileID: 3887353691269359978, guid: 69a527471f8b0f24b810968babcc125f, type: 3}
+    - target: {fileID: 2804106566559583696, guid: 3ad812db89b0d9a4da0ba9b3db287ad5, type: 3}
       propertyPath: portalConnections.Array.data[0].oneWayConnection
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 2804106566559583696, guid: 3ad812db89b0d9a4da0ba9b3db287ad5, type: 3}
       propertyPath: portalConnections.Array.data[0].sourcePortalObject
