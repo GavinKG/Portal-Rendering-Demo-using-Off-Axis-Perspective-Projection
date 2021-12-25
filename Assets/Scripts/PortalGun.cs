@@ -70,7 +70,7 @@ public class PortalGun : MonoBehaviour
         // shoot a ray from center of the screen
         Ray ray = camera.ViewportPointToRay(new Vector2(0.5f, 0.5f));
         RaycastHit hit;
-        if (Physics.Raycast(ray, out hit))
+        if (Physics.Raycast(ray, out hit, 100f))
         {
             GameObject wall = hit.transform.gameObject;
 
@@ -97,7 +97,7 @@ public class PortalGun : MonoBehaviour
             {
                 up = Vector3.up;
                 right = Vector3.Cross(forward, up);
-                up = Vector3.Cross(forward, right);
+                up = Vector3.Cross(right, forward);
             }
 
             // check detection points
@@ -122,12 +122,7 @@ public class PortalGun : MonoBehaviour
                         }
                     }
 
-                    if (Mathf.Abs(detectionHit.distance - camToPointLength) <= detectionPointDelta)
-                    {
-                        portalPositionUnderScreenCenter = hit.point;
-                        portalRotationUnderScreenCenter = Quaternion.LookRotation(forward, up);
-                    }
-                    else
+                    if (Mathf.Abs(detectionHit.distance - camToPointLength) > detectionPointDelta)
                     {
                         // detection point not attached to back wall.
                         return false;
@@ -140,6 +135,9 @@ public class PortalGun : MonoBehaviour
                 }
 
             }
+            // all detection points passed
+            portalPositionUnderScreenCenter = hit.point;
+            portalRotationUnderScreenCenter = Quaternion.LookRotation(forward, up);
         }
         else
         {

@@ -7,8 +7,8 @@ Material:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: PortalPlaneRenderTarget
-  m_Shader: {fileID: -6465566751694194690, guid: ee82dec8f7c009b4f8015b4216d3dcb2, type: 3}
+  m_Name: Portal
+  m_Shader: {fileID: 4800000, guid: 306779c2a49c447438df236a4c80fad4, type: 3}
   m_ShaderKeywords: 
   m_LightmapFlags: 4
   m_EnableInstancingVariants: 0
@@ -81,6 +81,7 @@ Material:
         m_Offset: {x: 0, y: 0}
     m_Floats:
     - Vector1_aa3c6cc15ba74510b95c122e7649a81b: 1
+    - _Alpha: 1
     - _AlphaClip: 0
     - _Blend: 0
     - _BumpScale: 1

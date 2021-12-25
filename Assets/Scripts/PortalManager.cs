@@ -139,10 +139,6 @@ public class PortalManager : MonoBehaviour
     // Render texture's size. Only useful when renderMethod == PortalRenderMethod.RenderTexture.
     Vector2Int rtSize;
 
-    List<Tuple<Vector3, Vector3>> debugLineList = new List<Tuple<Vector3, Vector3>>();
-    List<Vector3> debugPointList = new List<Vector3>();
-
-
 
     private void Start()
     {
@@ -183,29 +179,10 @@ public class PortalManager : MonoBehaviour
 
     private void Update()
     {
+
         foreach (PortalConnectionInfo connectionInfo in connectionInfo)
         {
             UpdateConnectionCamera(connectionInfo);
-        }
-    }
-
-    private void OnDrawGizmos()
-    {
-        if (debug)
-        {
-
-            foreach (Tuple<Vector3, Vector3> line in debugLineList)
-            {
-                Gizmos.DrawRay(line.Item1, line.Item2);
-            }
-
-            foreach (Vector3 point in debugPointList)
-            {
-                Gizmos.DrawSphere(point, 0.2f);
-            }
-
-            debugLineList.Clear();
-            debugPointList.Clear();
         }
     }
 
@@ -272,7 +249,7 @@ public class PortalManager : MonoBehaviour
 
         if (renderMethod == PortalRenderMethod.RenderTexture)
         {
-            info.renderTexture = new RenderTexture(rtSize.x, rtSize.y, 32);
+            info.renderTexture = new RenderTexture(rtSize.x, rtSize.y, 16);
             camera.targetTexture = info.renderTexture;
         }
         else if (renderMethod == PortalRenderMethod.Stencil)
@@ -310,93 +287,51 @@ public class PortalManager : MonoBehaviour
 
     void UpdateConnectionCamera_UsingRenderTexture(PortalConnectionInfo connectionInfo)
     {
+        SetupPortalCamera(connectionInfo); // that's it. RT is already configured in InitPortalConnection
+    }
 
-        // get corner view directions on source portal's world space (camera -> corner)
+    void UpdateConnectionCamera_UsingStencil(PortalConnectionInfo connectionInfo)
+    {
+        throw new NotImplementedException();
+    }
+
+    void SetupPortalCamera(PortalConnectionInfo connectionInfo)
+    {
         Vector3 camPos = ViewCamera.transform.position;
-        Vector3 upperLeftCornerViewDirWS = connectionInfo.sourcePortal.WorldUpperLeftCorner - camPos;
-        Vector3 upperRightCornerViewDirWS = connectionInfo.sourcePortal.WorldUpperRightCorner - camPos;
-        Vector3 lowerLeftCornerViewDirWS = connectionInfo.sourcePortal.WorldLowerLeftCorner - camPos;
-        Vector3 lowerRightCornerViewDirWS = connectionInfo.sourcePortal.WorldLowerRightCorner - camPos;
-
-        // ...and convert to source portal's local space, therefore becoming target portal's out ray direction
-        Vector3 upperLeftCornerViewDirLS = connectionInfo.sourcePortal.transform.InverseTransformDirection(upperLeftCornerViewDirWS);
-        Vector3 upperRightCornerViewDirLS = connectionInfo.sourcePortal.transform.InverseTransformDirection(upperRightCornerViewDirWS);
-        Vector3 lowerLeftCornerViewDirLS = connectionInfo.sourcePortal.transform.InverseTransformDirection(lowerLeftCornerViewDirWS);
-        Vector3 lowerRightCornerViewDirLS = connectionInfo.sourcePortal.transform.InverseTransformDirection(lowerRightCornerViewDirWS);
-
-        // ...and convert to target portal's world space
-        Vector3 targetUpperLeftCornerViewDirWS = connectionInfo.targetPortal.transform.TransformDirection(upperLeftCornerViewDirLS);
-        Vector3 targetUpperRightCornerViewDirWS = connectionInfo.targetPortal.transform.TransformDirection(upperRightCornerViewDirLS);
-        Vector3 targetLowerLeftCornerViewDirWS = connectionInfo.targetPortal.transform.TransformDirection(lowerLeftCornerViewDirLS);
-        Vector3 targetLowerRightCornerViewDirWS = connectionInfo.targetPortal.transform.TransformDirection(lowerRightCornerViewDirLS);
-
-        // Get 4 corners' positions on other portal's world space.
-        Vector3 targetUpperLeftCornerWS = connectionInfo.targetPortal.transform.TransformPoint(connectionInfo.sourcePortal.LocalUpperLeftCorner);
-        Vector3 targetUpperRightCornerWS = connectionInfo.targetPortal.transform.TransformPoint(connectionInfo.sourcePortal.LocalUpperRightCorner);
-        Vector3 targetLowerLeftCornerWS = connectionInfo.targetPortal.transform.TransformPoint(connectionInfo.sourcePortal.LocalLowerLeftCorner);
-        Vector3 targetLowerRightCornerWS = connectionInfo.targetPortal.transform.TransformPoint(connectionInfo.sourcePortal.LocalLowerRightCorner);
-
-        if (debug)
-        {
-            debugLineList.Add(new Tuple<Vector3, Vector3>(targetUpperLeftCornerWS, targetUpperLeftCornerViewDirWS));
-            debugLineList.Add(new Tuple<Vector3, Vector3>(targetUpperRightCornerWS, targetUpperRightCornerViewDirWS));
-            debugLineList.Add(new Tuple<Vector3, Vector3>(targetLowerLeftCornerWS, targetLowerLeftCornerViewDirWS));
-            debugLineList.Add(new Tuple<Vector3, Vector3>(targetLowerRightCornerWS, targetLowerRightCornerViewDirWS));
-        }
-
 
         // Find target camera's rotation (same as target portal)
         Quaternion targetCamRot = connectionInfo.targetPortal.transform.rotation;
 
         // Find target camera's position
-        Vector3 targetCamPos;
-        if (!ViewCamera.orthographic)
-        {
-            // Perspective!
-            bool success = Utils.LineLineIntersection(targetUpperLeftCornerWS, -targetUpperLeftCornerViewDirWS, targetUpperRightCornerWS, -targetUpperRightCornerViewDirWS, out targetCamPos);
-            if (!success)
-            {
-                throw new Exception("Something weird happened. Maybe the universe is changing foundemental rules.");
-            }
-
-        }
-        else
-        {
-            throw new NotImplementedException();
-        }
+        Vector3 camPosLS = connectionInfo.sourcePortal.transform.InverseTransformPoint(camPos);
+        camPosLS.z *= -1; // mirror-like
+        Vector3 targetCamPos = connectionInfo.targetPortal.transform.TransformPoint(camPosLS);
 
         // Figure out perspective projection's center point on near plane
-        Plane nearPlane = new Plane(connectionInfo.targetPortal.FacingDirection, connectionInfo.targetPortal.transform.position); // the target portal's sitting plane
-        Vector3 centerPointWS = nearPlane.ClosestPointOnPlane(targetCamPos);
+        Plane nearPlane = new Plane(connectionInfo.targetPortal.FacingDirection, connectionInfo.targetPortal.transform.position); // the target portal's sitting plane, therefore becoming portal camera's near plane
+        Vector3 centerPointWS = nearPlane.ClosestPointOnPlane(targetCamPos); // find the center point
         Vector3 centerPointLS = connectionInfo.targetPortal.transform.InverseTransformPoint(centerPointWS); // x, y should be the offset for the frustum
 
-        if (debug)
-        {
-            debugPointList.Add(centerPointWS);
-        }
-
-        // Get projection matrix
-        float far = ViewCamera.farClipPlane; // follows the main camera.
+        // Calculate the off-axis projection matrix
+        float far = ViewCamera.farClipPlane;
         float near = Vector3.Distance(centerPointWS, targetCamPos);
-        float left = connectionInfo.sourcePortal.LocalUpperLeftCorner.x + centerPointLS.x;
-        float right = connectionInfo.sourcePortal.LocalUpperRightCorner.x + centerPointLS.x;
-        float top = connectionInfo.sourcePortal.LocalUpperLeftCorner.y + centerPointLS.y;
-        float bottom = connectionInfo.sourcePortal.LocalLowerLeftCorner.y + centerPointLS.y;
-        Matrix4x4 proj = Matrix4x4.Frustum(left, right, bottom, top, near, far); // off-axis perspective projection.
+        float left = connectionInfo.sourcePortal.LocalUpperLeftCorner.x - centerPointLS.x;
+        float right = connectionInfo.sourcePortal.LocalUpperRightCorner.x - centerPointLS.x;
+        float top = connectionInfo.sourcePortal.LocalUpperLeftCorner.y - centerPointLS.y;
+        float bottom = connectionInfo.sourcePortal.LocalLowerLeftCorner.y - centerPointLS.y;
+        Matrix4x4 proj = Matrix4x4.Frustum(left, right, bottom, top, near, far);
 
         // Apply to the camera object
         connectionInfo.cameraObject.transform.position = targetCamPos;
         connectionInfo.cameraObject.transform.rotation = targetCamRot;
         Camera portalCamera = connectionInfo.cameraObject.GetComponent<Camera>();
         portalCamera.projectionMatrix = proj;
-        // portalCamera.cullingMatrix = proj;
 
+        // Let Unity draw camera's frustum correctly...
+        portalCamera.nearClipPlane = near;
 
-
-    }
-    void UpdateConnectionCamera_UsingStencil(PortalConnectionInfo connectionInfo)
-    {
-        throw new NotImplementedException();
+        // Portal culling
+        portalCamera.cullingMatrix = proj * portalCamera.worldToCameraMatrix;
     }
 
 
